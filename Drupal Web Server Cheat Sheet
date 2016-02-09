@@ -1,0 +1,124 @@
+
+### APACHE COMMANDS
+# 
+# RESTARTING APACHE AFTER MODS TO CONF FILES
+sudo service apache2 restart
+#
+sudo restart apache2
+#
+sudo /etc/init.d/apache2 reload
+#
+sudo start apache2
+sudo stop apache2
+sudo reload apache2
+sudo restart apache2
+#
+sudo service smbd restart
+
+### UNIX COMMANDS 
+#
+# EXTRACT DRUPAL INSTALL
+wget http://drupal.org/files/projects/drupal-x.y.tar.gz
+tar -xzvf drupal-x.x.tar.gz
+rm drupal-x.x.tar.gz
+#
+# MOVING TO ITS INTENDED LOCATION
+mv drupal-x.x/* drupal-x.x/.htaccess /var/www/html
+mv drupal-x.x/.gitignore ./
+#
+# BACKUP DRUPAL CORE DIRECTORY
+cd /var/www/html/drupal
+tar zcf drupal-backup.tgz www/
+cp drupal-backup.tgz ~
+#
+# RESTORE DRUPAL CORE DIRECTORY
+tar zxf drupal_backup.tgz
+# 
+# COPY SETTINGS AND SET PERMISSION
+cp sites/default/default.settings.php sites/default/settings.php
+# 
+# PERMISSIONS BEFORE THE INSTALLATION
+chmod a+w sites/default
+chmod a+w sites/default/settings.php
+#
+# PERMISSIONS AFTER THE INSTALLATION IS FINISHED
+chmod go-w sites/default
+chmod go-w sites/default/settings.php
+#
+# CREATE SITES/DEFAULT/FILES & UPLOADS DIRECTORIES
+mkdir sites/default/files
+chmod a+w sites/default/files
+#
+mkdir sites/default/uploads
+chmod a+w sites/default/uploads
+#
+# SET PERMISSIONS TO DRUPAL INSTALL DIRECTORY 
+cd /var/www/html/drupal7
+#
+chown -R webserver:www-data .
+#
+find . -type d -exec chmod u=rwx,g=rx,o= '{}' \;
+#
+find . -type f -exec chmod u=rw,g=r,o= '{}' \;
+#
+# SET PERMISSIONS TO DRUPAL/SITES DIRECTORY 
+cd /var/www/html/drupal7/sites
+#
+find . -type d -name files -exec chmod ug=rwx,o= '{}' \;
+#
+for d in ./*/files
+do
+   find $d -type d -exec chmod ug=rwx,o= '{}' \;
+   find $d -type f -exec chmod ug=rw,o= '{}' \;
+done
+
+### MYSQL COMMANDS
+#
+# LOG IN TO MYSQL
+mysql -u root -p
+#
+# CREATE DATBASE IN MYSQL
+mysqladmin -u drupaluser -p create dev_drupal7db
+#
+# GRANT PERMISSION TO DATABASE
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER,
+  CREATE TEMPORARY TABLES ON dev_drupal7db.*
+  TO 'dev_drupal7db'@'localhost' IDENTIFIED BY 'password';
+#
+# BACKUP MYSQL DATABASE
+mysqldump -h localhost u root p \ dev_drupal8db > dev_drupal8db_backup.mysql
+#
+# IMPORT DUMP TO MYSQL DATABASE
+mysql -u drupaluser -p dev_drupal7db < file.sql
+
+### .HTACCESS EXAMPLES
+#
+CODE GOES INSIDE THE .htaccess FILE, AFTER RewriteEngine On
+# Redirect HTTP to HTTPS
+RewriteCond %{HTTPS} off
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Redirect http://domain.com to http://www.domain.com
+RewriteCond %{HTTP_HOST} !^www\. [NC]
+RewriteRule ^ http://www.%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Redirecting http://domain.com to https://domain.com
+RewriteCond %{HTTPS} off
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ensure that all the domains were redirected to https://www. except for xyz domains.
+  # ensure www.
+  RewriteCond %{HTTP_HOST} !prod\.xyz\.com [NC]  # exclude xyz domains
+  RewriteCond %{HTTP_HOST} !^www\. [NC]
+  RewriteRule ^ https://www.%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+  # ensure https
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https 
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+### DNS EXAMPLES
+#
+ Domain	        DNS record type		IP/Hostname
+www.mysite.com	CNAME	            dc-2459-906772057.us-east-1.elb.amazonaws.com
+mysite.com	    A	 				        123.45.67.89 
