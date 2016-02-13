@@ -1,0 +1,244 @@
+========================================
+Drupal & Drush Installation With Scripts
+========================================
+
+There are many ways of accomplishing this installation. What this tutorial attempts to do is to outline the most basic installation possible. It show you how to install Drupal from the command-line to speed up "development" of your website.
+
+[[EDIT]] REMOVED LAMP SERVER INSTALL PART OF TUTORIAL AS THERE ARE MUCH BETTER (MORE SECURE) TUTORIALS ON THIS TOPIC.
+
+FOR A LIVE SITE DON'T USE ROOT AS DRUPAL'S DATABASE USER. FOR DEVELOPMENT PURPOSES WHERE SECURITY IS NOT A CONCERN GO AHEAD - IT MAKES SETUP AND RE-INSTALLATION FASTER. BUT I STRESS THIS IS ONLY FOR DEVELOPMENT PURPOSES WHERE RE-INSTALLATIONS MAY BE A COMMON THING.
+
+Here's the plan:
+==========
+Install drush for using the command line on Drupal. Create some management scripts to manage Drupal via the command-line. Create some installation scripts to install drupal via the command-line. Make the scripts executable and install them in /usr/local/bin. Open a terminal and install Drupal with one command.
+
+01. Assumptions
+==========
+You have your LAMP server, Drupal MySQL database and databse user setup and ready to go!
+For development sites on my local desktop machine I use root as drupal's database user because it speeds up re-installation when necessary.
+
+02. Install drush (DRUSH 4.4 AVAILABLE IN NATTY WITHOUT PPA)
+==========
+#apt-get install drush
+
+03. Create 3 folders to hold your drupal backups, scripts and libraries
+==========
+#mkdir /home/user/drupal/backup
+#mkdir /home/user/drupal/scripts
+#mkdir /home/user/drupal/libraries
+#cd /home/user/drupal/scripts
+
+04. Create a script to manage web server permissions
+==========
+#gedit drupal-siteperms && chmod +x drupal-siteperms
+
+---------cut-and-paste----------
+#! /bin/bash
+
+cd /var/www
+chown -R root:www-data .
+find . -type d -exec chmod u=rwx,g=rx,o= {} \;
+find . -type f -exec chmod u=rw,g=r,o= {} \;
+cd /var/www/sites
+find . -type d -name files -exec chmod ug=rwx,o= '{}' \;
+find . -name files -type d -exec find '{}' -type f \; | while read FILE; do chmod ug=rw,o= "$FILE"; done
+find . -name files -type d -exec find '{}' -type d \; | while read DIR; do chmod ug=rwx,o= "$DIR"; done
+echo
+echo "Permission rebuilding is complete!"
+echo
+----------cut-and-paste----------
+
+05. Create a script to manage Drupal updates
+==========
+#gedit drupal-siteup && chmod +x drupal-siteup
+
+----------cut-and-paste----------
+#!/bin/bash
+
+drush --yes -r /var/www up && echo
+drush --yes -r /var/www cc all && echo
+drush --yes -r /var/www cron && echo
+drupal-siteperms
+----------cut-and-paste----------
+
+06. Create a script to manage Drupal backups
+==========
+#gedit drupal-backup && chmod +x drupal-backup
+
+----------cut-and-paste----------
+#!/bin/bash
+
+drush -r /var/www sql-dump –result-file=/home/user/drupal/backup/backup.sql
+----------cut-and-paste----------
+
+07. Create a script to install drupal for the first time
+==========
+#gedit install-drupal-first && chmod +x install-drupal-first
+
+----------cut-and-paste----------
+#!/bin/bash
+
+clear
+echo
+echo " ... INSTALL DRUPAL CORE FOR THE FIRST TIME”
+echo
+
+# GOTO WEB ROOT
+cd /var/www
+
+# CLEAR DATABASE (make sure it is clean!)
+drush --yes sql-drop
+echo
+
+# CLEAR WEB ROOT OF OLD SITE IF ANY (make sure it is clean!)
+rm -Rf /var/www/* > /dev/null 2>&1 && rm /var/www/.htaccess > /dev/null 2>&1
+
+# DOWNLOAD DRUPAL CONTAINER INTO WEB ROOT
+drush --yes dl drupal --drupal-project-rename
+echo
+
+# RELOCATE DRUPAL FILES TO FROM CONTAINER TO WEBROOT
+mv /var/www/drupal/* /var/www && mv /var/www/drupal/.htaccess /var/www
+
+# REMOVE DRUPAL DOWNLOAD CONTAINER
+rm -r /var/www/drupal
+
+# CREATE DRUPAL INSTALL SETTINGS.PHP
+cp /var/www/sites/default/default.settings.php /var/www/sites/default/settings.php
+
+# COPY LIBRARY FILES TO WEB DRUPAL
+cp -Rf /home/user/drupal/libraries /var/www/sites/all/
+
+# RESET WEB ROOT PERMISSIONS TO DEFAULT
+drupal-siteperms
+echo
+
+# SET TEMP INSTALL PERMISSIONS FOR DEFAULT FOLDER AND SETTINGS.PHP
+chmod 777 /var/www/sites/default && chmod 777 /var/www/sites/default/settings.php
+
+# INSTALL DRUPAL WITH OWNER AND DEFAULT DATABASE
+drush --yes site-install standard --site-name=mywebsite --site-mail=jim@gmail.com --account-name=jim --account-pass=12345 --db-url=mysql://root:a1B2c3@localhost/drupaldb
+echo
+
+# RESET WEB ROOT PERMISSIONS TO DEFAULT AFTER INSTALL
+drupal-siteperms
+echo
+
+# UPDATE DRUPAL
+drupal-siteup
+
+echo
+echo " ... DRUPAL COMMERCE SITE : READY : BROWSE TO http://localhost "
+echo
+----------cut-and-paste----------
+
+08. Create a script to re-install drupal with existing database
+==========
+#gedit install-drupal-existing && chmod +x install-drupal-existing
+
+----------cut-and-paste----------
+#!/bin/bash
+
+clear
+echo
+echo " ... INSTALL DRUPAL CORE WITH EXISTING DATABASE”
+echo
+
+# GOTO WEB ROOT
+cd /var/www
+
+# REMOVE OLD BACKUPS (make sure it is clean!)
+rm -Rf /home/user/drupal/backup/backup.sql
+
+# BACKUP EXISTING SITE SQL (create up-to-date backup!)
+drush -y sql-dump --result-file=/home/user/drupal/backup/backup/backup.sql
+echo
+
+# CLEAR DATABASE
+drush -y sql-drop
+echo
+
+# CLEAR WEB ROOT OF OLD SITE (make sure it is clean!)
+rm -Rf /var/www/* > /dev/null 2>&1 && rm /var/www/.htaccess > /dev/null 2>&1
+
+# DOWNLOAD DRUPAL CONTAINER INTO WEB ROOT
+drush --yes dl drupal --drupal-project-rename
+echo
+
+# RELOCATE DRUPAL FILES TO FROM CONTAINER TO WEBROOT
+mv /var/www/drupal/* /var/www && mv /var/www/drupal/.htaccess /var/www
+
+# REMOVE DRUPAL DOWNLOAD CONTAINER
+rm -r /var/www/drupal
+
+# CREATE DRUPAL INSTALL SETTINGS.PHP
+cp /var/www/sites/default/default.settings.php /var/www/sites/default/settings.php
+
+# COPY LIBRARY FILES TO WEB DRUPAL
+cp -Rf /home/user/drupal/libraries /var/www/sites/all/
+
+# RESET WEB ROOT PERMISSIONS TO DEFAULT
+drupal-siteperms
+echo
+
+# SET TEMP INSTALL PERMISSIONS FOR DEFAULT FOLDER AND SETTINGS.PHP
+chmod 777 /var/www/sites/default && chmod 777 /var/www/sites/default/settings.php
+
+# INSTALL DRUPAL WITH OWNER AND DEFAULT DATABASE
+drush --yes site-install standard --site-name=mywebsite --site-mail=jim@gmail.com --account-name=jim --account-pass=12345 --db-url=mysql://root:a1B2c3@localhost/drupaldb
+echo
+
+# RESET WEB ROOT PERMISSIONS TO DEFAULT AFTER INSTALL
+drupal-siteperms
+echo
+
+# RESTORE PREVIOUS SQL
+drush -y sql-cli < /home/user/drupal/backup/backup.sql
+
+# RESET PERMISSIONS
+drupal-siteperms
+
+# UPDATE DRUPAL
+drupal-siteup
+
+echo
+echo " ... DRUPAL COMMERCE SITE : REINSTALLED : BROWSE TO http://localhost "
+echo
+----------cut-and-paste----------
+
+You should now have the following scripts located in /home/user/drupal/scripts
+==========
+drupal-siteperms, drupal-siteup, drupal-backup, install-drupal-first, install-drupal-existing
+
+Copy over your scripts from /home/user/drupal/scripts to /usr/local/bin
+==========
+#sudo cp /home/user/drupal/scripts/* /usr/local/bin
+
+RUNNING THESE SCRIPTS!
+==========
+
+First time Drupal installation open a terminal and issue the installation command:
+#sudo install-drupal-first
+
+subsequent re-installations of Drupal with an existing database:
+#sudo install-drupal-existing
+
+Then open up your browser and go to http://localhost and you are all done.
+
+Remember you can use the management scripts at any time independently
+==========
+
+To update Drupal and additionally reset site permissions run:
+#drush -r /var/www drupal-siteup
+
+To reset site permissions only run:
+#drush -r /var/www drupal-siteperms
+
+To backup the Drupal database run:
+#drush -r /var/www drupal-backup
+
+!! /home/user/drupal/scripts/” “usr” = user name !!
+
+==========
+All done :-))
+==========
