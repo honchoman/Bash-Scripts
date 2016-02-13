@@ -1,0 +1,55 @@
+  +-------------------------------------------------------------------------+
+  | How To Use RAR To Compress, Decompress,  And Split Files From Terminal  |
+  +-------------------------------------------------------------------------+
+
+/*
+*  1. Installing RAR
+*/
+
+- To be able to compress/decompress rar files under Ubuntu/Linux Mint, you need to install RAR packages with this command:
+
+sudo apt-get install unrar rar
+
+/*
+*  2. RAR Uses
+*/
+
+- To extract the contents of a .rar file, run this command:
+
+unrar e file.rar
+
+or
+
+rar e file.rar
+
+- To extract an archive file and keep full path intact, run this command:
+
+ rar x folder.rar
+
+- To compress a file into a rar file, run this command:
+
+ rar a file.rar file.ext
+
+/*
+*  Replace ext with your file format you want to compress (txt, exe, avi, ogg, etc.)
+*/
+
+- To compress a folder, run this command:
+
+rar a -r folder.rar path/to/folder/
+
+- To compress and split the file into fragments, run this command:
+
+rar a -v20000 file.rar file.mp4
+
+or
+
+rar a -v20000 -vn file.rar file.mp4
+
+The commands above will compress file.mp4 and split it into many files, each one has a size of about 20MB.
+
+/*
+For more help about the use of the rar format, run this command:
+*/
+
+man rar
