@@ -1,0 +1,132 @@
+****************************
+Ultimate Search
+****************************
+find -type f -regex ".*\.\(htm[l]?\)$" -exec grep -ilr "term" '{}' +
+
+find -type f -regex ".*\.\(js\|php\|htm[l]?\|css\)$" -exec grep -ilr "\(349\|629\|839\)" '{}' +
+find -type f -regex ".*\.\(htm[l]?\)$" -exec grep -ir "term" '{}' +
+
+Show Colored Context:
+find -type f -regex ".*\.\(js\|php\|htm[l]?\|css\)$" -exec grep -ir --color=auto "ev-code-signing-certificate-installation.htm" '{}' + 
+search for broken links Marketing people leaving links to their domain instead of www.digicert.com:
+find -type f -regex ".*\.\(js\|php\|htm[l]?\|css\)$" -exec grep -ir --color=auto "\(danjo\|mwoodfield\)" '{}' +
+
+
+find . -ctime -7 (all files created in last 7 days)
+find ./ ctime +365 (find all files created in last year)
+
+Create a find script
+http://technonstop.com/fun-with-unix-linux-find-command
+
+***********************************************************************************
+Search for FILENAMES containing 'term' in a group of extensions (js php htm html css) or just (htm/html)
+************************************************************************************
+find -type f -regex ".*\.\( js\|php\|htm[l]?\|css\)$" -name "*term*"
+find -type f -regex ".*\.\( htm[l]?\)$" -name "*term*"
+find . -name '<string>' (find file by name)
+find . -mmin 5 (find files edited within last 5 minutes)
+
+******************************************
+Ultimate Search and replace 
+	Doesn't work well with special regex characters (e.g. $ or Spanish accents) 
+	in the search or replace field though, for those you need to replace them with a '.'
+	Make a backup of the folder before attempting, just so you won't blow everything up
+	Also you'll have to sue the later examples if you want to include a '/' or " because these are reserved special charactesr.  See the examples that follow:
+******************************************
+find -type f -regex ".*\.\(js\|php\|htm[l]?\|css\)$" -exec grep -ilr "term" '{}' + | xargs sed -i "s|term|replacement|g"
+
+example with -'s and _'s
+find -type f -regex ".*\.\(js\|php\|htm[l]?\|css\)$" -exec grep -ilr "include('includes/d3-static_menu_about-digicert.php')" '{}' + | xargs sed -i "s|include('includes/d3-static_menu_about-digicert.php')|include( lang_include_path('includes/d3-static_menu_about-digicert.php', 'es') )|g"
+
+example with /'s and "-s (you can use another character | to separate files you're replacing)
+find -type f -regex ".*\.\(js\|php\|htm[l]?\|css\)$" -exec grep -ilr '<li><a href="http://www.digicert.com/es/codigo/kernel-mode-certificates.htm">' '{}' + | xargs sed -i 's|<li><a href="http://www.digicert.com/es/codigo/kernel-mode-certificates.htm">|<li><a href="http://www.digicert.com/es/codigo/certificados-de-controladores-de-modo-kernel.htm">|g'
+
+******************************************
+Shove all .htm(l) files into a text file (for auto-screenshotting)
+find -type f -regex ".*\.\(htm[l]?\)$" -name "*" > static_pages.txt
+-next = put these into static pages on java docs. 
+(get urls of HOME > tier1 pages (i.e. product pages)
+(maybe prepend file naming with _ so they come out first alphabetically)
+verify all these really well, then look at the tier 2 (other marketing/support pages)
+
+http://stackoverflow.com/questions/5905054/how-can-i-recursively-find-all-files-in-current-and-subfolders-based-on-wildcard
+http://content.hccfl.edu/pollock/unix/findcmd.htm
+
+Filename Locating (search directory and subfolders)
+find -name term*
+find . -name term* (search current and subfolders only)
+find -type f -regex ".*\.\(php\)$" -name "*term*"
+
+-size -5000k
+(only find files < 5 mb)
+find / -size +10000k
+(only find files > 10 mb)
+-amin 10  (accessed in last 10 minutes)
+-amin +30 -amin -60 (find between 30 and 60 minutes)
+
+-atime 2  (accessed in last 2 days)
+-mmin 10 (modified in last 10 minutes)
+-mtime 2 (modified in last 2 days)
+
+Search anywhere (root, parent and subdirs):
+[locate is faster but you may need to sudo updatedb]
+locate term*
+locate -b '\filename'
+(above command only searches for "filename."
+find / -name 'file*'
+[find older than 60 seconds]
+http://superuser.com/questions/383123/find-all-files-older-than-one-minute
+find . ! -mtime -60s
+find . !( -mtime -60s )
+
+(find files then do basically a dir to show attributes)
+find / - name 'Metallica*' -exec ls -l {\}\ \;
+
+grepping - http://www.crazysquirrel.com/computing/debian/general-commands/grep.jspx
+
+Great LS info 
+http://linuxchallenges.blogspot.com/2012/03/use-of-find-ls-commands-in-redhat-6.html
+
+
+find . 	List files in current folder
+find /	List files in root folder
+
+find . -iname '*php' | xargs grep 'string' -sl
+
+Another common search for me, is to just look at the recently updated files:
+find . -iname '*php' -mtime -1 | xargs grep 'string' -sl
+
+would find only files edited today, whilst the following finds the files older than today:
+find . -iname '*php' -mtime +1 | xargs grep 'string' -sl
+
+Good example:
+find -type f -name "*" | xargs grep 'word, phrase, or regular expression'
+
+-type f	only look at files, not directories.
+-name	"*" tells find to examine everything. You can replace this with "*.js" to only search JavaScript files, for example.
+|	"pipes" the output of the command on the left to the input of the command on the right.
+xargs	create and executes a command based on the arguments you pass to it.
+grep	searches the contents of files and returns each line that is a match.
+http://arguments.callee.info/2010/07/08/recursive-find-in-files-on-linux-or-unix/
+
+
+locate whereis
+	Find whereis file (uses slocatedb which should be periodically updated)
+
+The mlocate command does not use the same database file as the standard locate command. Therefore, you may want to create the database manually by typing the following command at the prompt.
+
+sudo /etc/cron.daily/mlocate
+
+Whereis and Which:
+whereis command shows you the location for the binary, source, and man pages for a command, whereas the which command only shows you the location of the binary for the command.
+
+which programname
+	searches for a program's location
+whereis linuxconf
+	This command will locate binary (or executable) programs and their respective man pages. The command:
+
+
+Perl tip: 43
+http://www.shell-fu.org/lister.php?tag=sed
+perl -pe 's/foo/bar/; etc'
+perl -p foo.pl
