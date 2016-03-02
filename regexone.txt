@@ -1,0 +1,31 @@
+example 1: ^\(-?\d+\)[,?\(\d*\)]*\(\.?\d*[e[-]?]?\d*\)[^p]$
+parentheses to capture digits
+
+^-?\d+[,?\d*]*\.?\d*[e[-]?]?\d*[^p]$
+
+(-?\d+) [,?(\d*)]*  (\.?\d*[e[-]?]?\d*)  [^p]$
+
+^		beginning
+
+-?		might start with negative sign, optional
+
+\d+		any number of digits
+
+group these two together for any number of repetitions to be able to match 1,000,000
+[
+,?		might have a comma in there
+\d*		0 or more digits
+]*
+
+\.?		might have a period
+
+\d*		0 or more digits
+
+[e[-]?]?		might have an e symbol, that might have a neg exponent like 1e-1 (but can't have a random hyphen w/o e)
+
+\d*		0 or more digits
+[^p]	does not end with a p
+$		ending
+
+example 2: ^[1|\(]?\s?(\d{3})[\D]?\d{3}[\D]?\d{4}
+1,,,,,,,,,,,
