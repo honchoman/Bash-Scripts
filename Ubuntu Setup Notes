@@ -1,0 +1,91 @@
+Notes for setting up web server on ubuntu for future reference
+ 
+### Install mysql server/client
+    sudo apt-get install mysql-server
+ 
+### Install php
+    sudo apt-get install php5 php5-mysql
+ 
+### Install apache (as required)
+    sudo apt-get install apache2
+
+### Install nginx & php5-fpm (as required)
+    sudo apt-get install nginx php5-fpm
+ 
+### Install (outbound) mail server
+    sudo apt-get install postfix
+ 
+### Create ssh login(s)
+    export NEWUSER="" -- assign the variable with the username
+    sudo useradd ${NEWUSER}
+    sudo usermod -a -G www-data,sudo -d /home/${NEWUSER} -s /bin/bash ${NEWUSER}
+    sudo mkdir /home/${NEWUSER}
+    sudo chown ${NEWUSER}:${NEWUSER} /home/${NEWUSER}
+
+
+### Apache configuration
+    create /etc/apache2/sites-available/newsite
+    -----------------x-----------------
+    <VirtualHost *:80>
+        ServerName newsite
+        DirectoryIndex index.php
+        DocumentRoot /srv/web/apache/newsite
+        <Directory /srv/web/apache/newsite>
+            Options -Indexes +FollowSymLinks
+            AllowOverride All
+            Order allow,deny
+            allow from all
+        </Directory>
+    </VirtualHost>
+    -----------------x-----------------
+    sudo ln -s /etc/apache2/sites-available/newsite /etc/apache2/sites-enabled/newsite
+    
+ 
+### nginx Configuration.
+    create /etc/nginx/sites-available/newsite
+    -----------------x-----------------
+    server {
+        listen          80;
+        server_tokens   off;
+        server_name     newsite;
+        root            /srv/web/nginx/newsite/;
+        index           index.php index.html;
+ 
+        access_log      /var/log/nginx/access.log;
+        error_log       /var/log/nginx/error.log;
+ 
+        location ~ \.php$ {
+            fastcgi_index index.php;
+            include /etc/nginx/fastcgi_params;
+            fastcgi_split_path_info ^(.+\.php)(/.+)$;
+            fastcgi_pass unix:/var/run/php5-fpm.sock;
+        }
+ 
+        location ~ /\.ht {
+            deny all;
+        }
+    }
+    -----------------x-----------------
+    sudo ln -s /etc/nginx/sites-available/newsite /etc/nginx/sites-enabled/newsite
+    
+
+### Tighten sshd - change /etc/ssh/sshd_config and restart ssh service
+    -----------------x-----------------
+    - Port 22
+    + Port 1300
+    
+    - PermitRootLogin yes
+    + PermitRootLogin no
+    
+    + AllowUsers newuser
+    + PasswordAuthentication no
+    -----------------x-----------------
+ 
+### Remove unused mysql accounts for security and allow access from localhost
+    -----------------x-----------------
+    select user, host from mysql.user -- see the list and drop the users you don't need.
+    drop user 'debian-sys-maint'@'localhost';
+    drop user 'root'@'';
+    drop user 'root'@'::1';
+    -----------------x-----------------
+ 
