@@ -1,4 +1,8 @@
 Notes for setting up web server on ubuntu for future reference
+
+### Assign hostname and restart
+    sudo hostname your-new-name
+    sudo /etc/init.d/networking restart
  
 ### Install mysql server/client
     sudo apt-get install mysql-server
